@@ -2,17 +2,35 @@ package com.llxy.five;
 
 import android.content.Context;
 import android.graphics.Point;
+import android.os.Handler;
+import android.os.Message;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 
 public class RJPanel extends RRPanel {
-	Point sign = new Point();
+	private final int COMPUTER_DONE = 100;
+	private boolean enable = true;
+	
+	Handler handler = new Handler() {
+		public void handleMessage(Message msg) {
+			if(msg.what== COMPUTER_DONE) {
+				invalidate();
+				enable = true;
+			}
+		};
+	};
+	
 	public RJPanel(Context context, AttributeSet attrs) {
 		super(context, attrs);
 	}
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
+		
+		if(!enable) {
+			return false;
+		}
+		
 		if (isGameOver)
 			return false;
 
@@ -31,13 +49,16 @@ public class RJPanel extends RRPanel {
 			WuziqiUtil.blackArray.add(p);
 			WuziqiUtil.blackSign();
 			invalidate();
-		}
-		
-		if (action == MotionEvent.ACTION_UP) {
+			
+		} else if (action == MotionEvent.ACTION_UP) {
+			enable = false;
 			if(!WuziqiUtil.checkFiveInLine(WuziqiUtil.blackArray)) {
-
-				computerLuozi();
-				invalidate();
+				new Thread() {
+					public void run() {
+						computerLuozi();
+						handler.sendEmptyMessage(COMPUTER_DONE);
+					};
+				}.start();
 				
 			}
 		}
